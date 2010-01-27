@@ -439,11 +439,21 @@ void UserInit(void)
     mInitAllSwitches();
     old_sw2 = sw2;
     old_sw3 = sw3;
+    
+    mLED_3_On();
+    
+    
+    Col_1 = 0;
+    Col_2 = 1;
+    Col_3 = 1;
+    Col_4 = 1;
 
     //initialize the variable holding the handle for the last
     // transmission
 
     lastTransmission = 0;
+    
+
 
 }//end UserInit
 

@@ -102,12 +102,17 @@
 
 
     /** LED ************************************************************/
-    #define mInitAllLEDs()      LATD &= 0xF0; TRISD &= 0xF0;
+    #define mInitAllLEDs()      LATD &= 0x00; TRISD &= 0x00;
     
     #define mLED_1              LATDbits.LATD0
     #define mLED_2              LATDbits.LATD1
     #define mLED_3              LATDbits.LATD2
     #define mLED_4              LATDbits.LATD3
+    
+    #define Col_4               LATDbits.LATD7
+    #define Col_3               LATDbits.LATD6
+    #define Col_2               LATDbits.LATD5
+    #define Col_1               LATDbits.LATD4
     
     #define mGetLED_1()         mLED_1
     #define mGetLED_2()         mLED_2
@@ -130,7 +135,7 @@
     #define mLED_4_Toggle()     mLED_4 = !mLED_4;
     
     /** SWITCH *********************************************************/
-    #define mInitAllSwitches()  TRISBbits.TRISB4=1;TRISBbits.TRISB5=1;
+    #define mInitAllSwitches()  TRISBbits.TRISB4=1;TRISBbits.TRISB5=1;INTCON2bits.RBPU=0;
     #define mInitSwitch2()      TRISBbits.TRISB4=1;
     #define mInitSwitch3()      TRISBbits.TRISB5=1;
     #define sw2                 PORTBbits.RB4
