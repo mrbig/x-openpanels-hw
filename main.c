@@ -453,6 +453,24 @@ void UserInit(void)
 
     lastTransmission = 0;
     
+    // A/D converter init
+    // Setting input channels
+    TRISAbits.TRISA0 = 1;
+    TRISAbits.TRISA1 = 1;
+    
+    // Enabling A/D channels
+    ADCON1bits.PCFG3 = 1;
+    ADCON1bits.PCFG2 = 1;
+    ADCON1bits.PCFG1 = 0;
+    ADCON1bits.PCFG0 = 1;
+    
+    // Selecting channel
+    ADCON0bits.CHS3=0;
+    ADCON0bits.CHS2=0;
+    ADCON0bits.CHS1=0;
+    ADCON0bits.CHS0=1;
+    
+    ADCON0bits.ADON=1;
 
 
 }//end UserInit
@@ -513,12 +531,13 @@ void Joystick(void)
     //If the last transmision is complete
     if(!HIDTxHandleBusy(lastTransmission))
     {
+        ADCON0bits.GO = 1;
+        
         //If the button is pressed
-        if(!sw3)
-        {
+//        if(!sw3)
+//        {
             //Indicate that the "x" button is pressed, but none others
-            joystick_input.members.buttons.x = 1;
-            joystick_input.members.buttons.square = 0;
+            joystick_input.members.buttons.x = !sw3;
             joystick_input.members.buttons.o = 0;
             joystick_input.members.buttons.triangle = 0;
             joystick_input.members.buttons.L1 = 0;
@@ -532,16 +551,19 @@ void Joystick(void)
             joystick_input.members.buttons.home = 0;
 
             //Move the hat switch to the "east" position
-            joystick_input.members.hat_switch.hat_switch = HAT_SWITCH_EAST;
+            joystick_input.members.hat_switch.hat_switch = HAT_SWITCH_NULL;
 
             //Move the X and Y coordinates to the their extreme values (0x80 is
             //  in the middle - no value).
-            joystick_input.members.analog_stick.X = 0;
+            joystick_input.members.analog_stick.X = ADRESH;
             joystick_input.members.analog_stick.Y = 0;
+            joystick_input.members.analog_stick.Z = 0;
+            joystick_input.members.analog_stick.Rz = 0;
 
            	//Send the packet over USB to the host.
            	lastTransmission = HIDTxPacket(HID_EP, (BYTE*)&joystick_input, sizeof(joystick_input));
-    
+
+    /*
         }
         else
         {
@@ -563,6 +585,7 @@ void Joystick(void)
            	//Send the 8 byte packet over USB to the host.
            	lastTransmission = HIDTxPacket(HID_EP, (BYTE*)&joystick_input, sizeof(joystick_input));
         }
+    */
     }
     return;		
 }//end joystick()
