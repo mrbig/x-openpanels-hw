@@ -135,7 +135,9 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
             BYTE left_stick:1;
             BYTE right_stick:1;
             BYTE home:1;
-            BYTE :3;    //filler
+            BYTE button14:1;
+            BYTE button15:1;
+            BYTE button16:1;
         } buttons;
         struct
         {
@@ -507,7 +509,18 @@ void ProcessIO(void)
 
 void ScanButtons(void)
 {
-    joystick_input.val[0] = ~PORTB;
+    BYTE i;
+    BYTE pos = 0x10;
+    
+    for (i=0; i<2; i++ ) {
+        LATD |= 0xf0;
+        LATD &= ~pos;
+        
+        pos = pos << 1;
+        
+        joystick_input.val[i] = ~PORTB;
+        
+    }
 }
 
 /******************************************************************************
@@ -551,12 +564,12 @@ void Joystick(void)
             joystick_input.members.buttons.R1 = 0;
             joystick_input.members.buttons.L2 = 0;
             joystick_input.members.buttons.R2 = 0;
-            */
             joystick_input.members.buttons.select = 0;
             joystick_input.members.buttons.start = 0;
             joystick_input.members.buttons.left_stick = 0;
             joystick_input.members.buttons.right_stick = 0;
             joystick_input.members.buttons.home = 0;
+            */
 
             //Move the hat switch to the "east" position
             joystick_input.members.hat_switch.hat_switch = HAT_SWITCH_NULL;
