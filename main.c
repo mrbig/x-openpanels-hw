@@ -89,32 +89,6 @@
         #pragma config EBTRB    = OFF
 
 
-
-#elif defined(PIC18F46J50_PIM) || defined(PIC18F_STARTER_KIT_1)
-     #pragma config WDTEN = OFF          //WDT disabled (enabled by SWDTEN bit)
-     #pragma config PLLDIV = 3           //Divide by 3 (12 MHz oscillator input)
-     #pragma config STVREN = ON          //stack overflow/underflow reset enabled
-     #pragma config XINST = OFF          //Extended instruction set disabled
-     #pragma config CPUDIV = OSC1        //No CPU system clock divide
-     #pragma config CP0 = OFF            //Program memory is not code-protected
-     #pragma config OSC = HSPLL          //HS oscillator, PLL enabled, HSPLL used by USB
-     #pragma config T1DIG = OFF          //Sec Osc clock source may not be selected, unless T1OSCEN = 1
-     #pragma config LPT1OSC = OFF        //high power Timer1 mode
-     #pragma config FCMEN = OFF          //Fail-Safe Clock Monitor disabled
-     #pragma config IESO = OFF           //Two-Speed Start-up disabled
-     #pragma config WDTPS = 32768        //1:32768
-     #pragma config DSWDTOSC = INTOSCREF //DSWDT uses INTOSC/INTRC as clock
-     #pragma config RTCOSC = T1OSCREF    //RTCC uses T1OSC/T1CKI as clock
-     #pragma config DSBOREN = OFF        //Zero-Power BOR disabled in Deep Sleep
-     #pragma config DSWDTEN = OFF        //Disabled
-     #pragma config DSWDTPS = 8192       //1:8,192 (8.5 seconds)
-     #pragma config IOL1WAY = OFF        //IOLOCK bit can be set and cleared
-     #pragma config MSSP7B_EN = MSK7     //7 Bit address masking
-     #pragma config WPFP = PAGE_1        //Write Protect Program Flash Page 0
-     #pragma config WPEND = PAGE_0       //Start protection at page 0
-     #pragma config WPCFG = OFF          //Write/Erase last page protect Disabled
-     #pragma config WPDIS = OFF          //WPFP[5:0], WPEND, and WPCFG bits ignored 
-
 #else
     #error No hardware board defined, see "HardwareProfile.h" and __FILE__
 #endif
@@ -305,27 +279,6 @@ BYTE hid_report[8];
 	
 	}	//This return will be a "retfie", since this is in a #pragma interruptlow section 
 
-#elif defined(__C30__)
-    #if defined(PROGRAMMABLE_WITH_USB_HID_BOOTLOADER)
-        /*
-         *	ISR JUMP TABLE
-         *
-         *	It is necessary to define jump table as a function because C30 will
-         *	not store 24-bit wide values in program memory as variables.
-         *
-         *	This function should be stored at an address where the goto instructions 
-         *	line up with the remapped vectors from the bootloader's linker script.
-         *  
-         *  For more information about how to remap the interrupt vectors,
-         *  please refer to AN1157.  An example is provided below for the T2
-         *  interrupt with a bootloader ending at address 0x1400
-         */
-//        void __attribute__ ((address(0x1404))) ISRTable(){
-//        
-//        	//asm("reset"); //reset instruction to prevent runaway code
-//        	//asm("goto %0"::"i"(&_T2Interrupt));  //T2Interrupt's address
-//        }
-    #endif
 #endif
 
 #pragma code
@@ -345,11 +298,7 @@ BYTE hid_report[8];
  *
  * Note:            None
  *******************************************************************/
-#if defined(__18CXX)
 void main(void)
-#else
-int main(void)
-#endif
 {
 //    //This can be used for user entry into the bootloader  
 //    #if defined(__C30__) 
@@ -416,10 +365,6 @@ static void InitializeSystem(void)
 {
     #if (defined(__18CXX) & !defined(PIC18F87J50_PIM))
         ADCON1 |= 0x0F;                 // Default all pins to digital
-    #elif defined(__C30__)
-        AD1PCFGL = 0xFFFF;
-    #elif defined(__C32__)
-        AD1PCFG = 0xFFFF;
     #endif
 
 
@@ -555,21 +500,12 @@ void ProcessIO(void)
  *****************************************************************************/
 void Joystick(void)
 {
-/*
-	if (!sw3) {
-		mLED_4_On();
- 	} else {
-		mLED_4_Off();
-	}
-	return;
-*/
     //If the last transmision is complete
     if(!HIDTxHandleBusy(lastTransmission))
     {
         //If the button is pressed
         if(!sw3)
         {
-			mLED_4_On();
             //Indicate that the "x" button is pressed, but none others
             joystick_input.members.buttons.x = 1;
             joystick_input.members.buttons.square = 0;
@@ -599,7 +535,6 @@ void Joystick(void)
         }
         else
         {
-			mLED_4_Off();
             //Reset values of the controller to default state
 
             //Buttons
@@ -678,81 +613,6 @@ BOOL Switch3IsPressed(void)
     return FALSE;                       // Was not pressed
 }//end Switch3IsPressed
 
-///********************************************************************
-// * Function:        void BlinkUSBStatus(void)
-// *
-// * PreCondition:    None
-// *
-// * Input:           None
-// *
-// * Output:          None
-// *
-// * Side Effects:    None
-// *
-// * Overview:        BlinkUSBStatus turns on and off LEDs 
-// *                  corresponding to the USB device state.
-// *
-// * Note:            mLED macros can be found in HardwareProfile.h
-// *                  USBDeviceState is declared and updated in
-// *                  usb_device.c.
-// *******************************************************************/
-//void BlinkUSBStatus(void)
-//{
-//    static WORD led_count=0;
-//    
-//    if(led_count == 0)led_count = 10000U;
-//    led_count--;
-//
-//    #define mLED_Both_Off()         {mLED_1_Off();mLED_2_Off();}
-//    #define mLED_Both_On()          {mLED_1_On();mLED_2_On();}
-//    #define mLED_Only_1_On()        {mLED_1_On();mLED_2_Off();}
-//    #define mLED_Only_2_On()        {mLED_1_Off();mLED_2_On();}
-//
-//    if(USBSuspendControl == 1)
-//    {
-//        if(led_count==0)
-//        {
-//            mLED_1_Toggle();
-//            mLED_2 = mLED_1;        // Both blink at the same time
-//        }//end if
-//    }
-//    else
-//    {
-//        if(USBDeviceState == DETACHED_STATE)
-//        {
-//            mLED_Both_Off();
-//        }
-//        else if(USBDeviceState == ATTACHED_STATE)
-//        {
-//            mLED_Both_On();
-//        }
-//        else if(USBDeviceState == POWERED_STATE)
-//        {
-//            mLED_Only_1_On();
-//        }
-//        else if(USBDeviceState == DEFAULT_STATE)
-//        {
-//            mLED_Only_2_On();
-//        }
-//        else if(USBDeviceState == ADDRESS_STATE)
-//        {
-//            if(led_count == 0)
-//            {
-//                mLED_1_Toggle();
-//                mLED_2_Off();
-//            }//end if
-//        }
-//        else if(USBDeviceState == CONFIGURED_STATE)
-//        {
-//            if(led_count==0)
-//            {
-//                mLED_1_Toggle();
-//                mLED_2 = !mLED_1;       // Alternate blink                
-//            }//end if
-//        }//end if(...)
-//    }//end if(UCONbits.SUSPND...)
-//
-//}//end BlinkUSBStatus
 
 
 /********************************************************************
