@@ -505,6 +505,10 @@ void ProcessIO(void)
     //Call the function that behaves like a keyboard   
 }//end ProcessIO
 
+void ScanButtons(void)
+{
+    joystick_input.val[0] = ~PORTB;
+}
 
 /******************************************************************************
  * Function:        void Joystick(void)
@@ -537,13 +541,17 @@ void Joystick(void)
 //        if(!sw3)
 //        {
             //Indicate that the "x" button is pressed, but none others
+            ScanButtons();
+            /*
             joystick_input.members.buttons.x = !sw3;
+            joystick_input.members.buttons.square = ADCON0bits.DONE;
             joystick_input.members.buttons.o = 0;
             joystick_input.members.buttons.triangle = 0;
             joystick_input.members.buttons.L1 = 0;
             joystick_input.members.buttons.R1 = 0;
             joystick_input.members.buttons.L2 = 0;
             joystick_input.members.buttons.R2 = 0;
+            */
             joystick_input.members.buttons.select = 0;
             joystick_input.members.buttons.start = 0;
             joystick_input.members.buttons.left_stick = 0;
