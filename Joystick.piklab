@@ -1,0 +1,56 @@
+<!DOCTYPE piklab>
+<piklab>
+  <general>
+    <device>18F4450</device>
+    <tool>c18</tool>
+    <programmer>custom</programmer>
+    <files>
+      <item>HardwareProfile - USBoard.h</item>
+      <item>main.c</item>
+      <item>usb_config.h</item>
+      <item>usb_descriptors.c</item>
+      <item>rm18f4450 - HID Bootload.lkr</item>
+      <item>USB/usb_device.c</item>
+      <item>USB/usb_function_hid.c</item>
+      <item>HardwareProfile.h</item>
+    </files>
+    <description></description>
+    <version>0.1</version>
+    <output_type>executable</output_type>
+    <custom_linker_script>/home/mrbig/xtras/xplane/hw/HIDJoystick/Firmware/rm18f4450.lkr</custom_linker_script>
+  </general>
+  <compiler>
+    <has_custom_arguments>true</has_custom_arguments>
+    <custom_options></custom_options>
+    <warning_level>0</warning_level>
+    <custom_arguments>
+      <item>-I$(SRCPATH)</item>
+      <item>-I/home/mrbig/.wine/drive_c/MCC18/h/</item>
+      <item>-I/home/mrbig/xtras/xplane/hw/HIDJoystick/Microchip/Include/</item>
+      <item>-p=%DEVICE</item>
+      <item>-Opa-</item>
+      <item>-fo=%OBJECT</item>
+      <item>%I</item>
+      <item>|grep -v Z:\</item>
+    </custom_arguments>
+    <includes>
+      <item>$(SRCPATH)</item>
+    </includes>
+  </compiler>
+  <linker>
+    <has_custom_arguments>false</has_custom_arguments>
+    <custom_options>/u_CRUNTIME</custom_options>
+    <custom_libraries></custom_libraries>
+    <format>inhx32</format>
+    <custom_arguments>
+      <item>/k%LKR_PATH</item>
+      <item>%LKR_NAME</item>
+      <item>/l/home/mrbig/.wine/drive_c/MCC18/lib/</item>
+      <item>/o%COFF</item>
+      <item>/m%MAP</item>
+      <item>%OBJS</item>
+      <item>%LIBS</item>
+    </custom_arguments>
+  </linker>
+  <editors/>
+</piklab>
