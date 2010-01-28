@@ -158,7 +158,7 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
 /** VARIABLES ******************************************************/
 #pragma udata
 BYTE old_sw2,old_sw3;
-char buffer[8];
+//char buffer[8];
 USB_HANDLE lastTransmission;
 BOOL Keyboard_out;
 
@@ -507,6 +507,9 @@ void ProcessIO(void)
     //Call the function that behaves like a keyboard   
 }//end ProcessIO
 
+/**
+ * Scan all buttons, and save them appropriately
+ */
 void ScanButtons(void)
 {
     BYTE i;
@@ -521,6 +524,52 @@ void ScanButtons(void)
         joystick_input.val[i] = ~PORTB;
         
     }
+}
+
+BYTE GetEncoderDirection(BYTE old1, BYTE old2, BYTE cur1, BYTE cur2) {
+    if (cur1 == old1 && cur2 == old2) {
+        return 0;
+    }
+    
+    if (cur1 ^ cur2) {
+        // 01 or 10
+        if ((cur1 && !old2) || (cur2 && old1)) {
+            return 1;
+        } else {
+            return 2;
+        }
+    } else {
+        // 11 or 00
+        if ((cur1 && old1) || (!cur1 && old2)) {
+            return 1;
+        } else {
+            return 2;
+        }
+        
+    }
+}
+
+/**
+ * Process rotary encoders
+ */
+void ProcessEncoders(void)
+{
+    BYTE dir;
+    
+    Col_1 = 0;
+    Col_2 = 1;
+    Col_3 = 1;
+    Col_4 = 1;
+    
+    dir = GetEncoderDirection(old_sw2, old_sw3, PORTBbits.RB4, PORTBbits.RB5);
+    
+    joystick_input.val[0] &= 0xcf;
+    joystick_input.val[0] |= dir << 4;
+    
+    old_sw2 = PORTBbits.RB4;
+    old_sw3 = PORTBbits.RB5;
+    
+    return;
 }
 
 /******************************************************************************
@@ -555,6 +604,7 @@ void Joystick(void)
 //        {
             //Indicate that the "x" button is pressed, but none others
             ScanButtons();
+            ProcessEncoders();
             /*
             joystick_input.members.buttons.x = !sw3;
             joystick_input.members.buttons.square = ADCON0bits.DONE;
@@ -611,61 +661,6 @@ void Joystick(void)
     return;		
 }//end joystick()
 
-
-
-/******************************************************************************
- * Function:        BOOL Switch2IsPressed(void)
- *
- * PreCondition:    None
- *
- * Input:           None
- *
- * Output:          TRUE - pressed, FALSE - not pressed
- *
- * Side Effects:    None
- *
- * Overview:        Indicates if the switch is pressed.  
- *
- * Note:            
- *
- *****************************************************************************/
-BOOL Switch2IsPressed(void)
-{
-    if(sw2 != old_sw2)
-    {
-        old_sw2 = sw2;                  // Save new value
-        if(sw2 == 0)                    // If pressed
-            return TRUE;                // Was pressed
-    }//end if
-    return FALSE;                       // Was not pressed
-}//end Switch2IsPressed
-
-/******************************************************************************
- * Function:        BOOL Switch3IsPressed(void)
- *
- * PreCondition:    None
- *
- * Input:           None
- *
- * Output:          TRUE - pressed, FALSE - not pressed
- *
- * Side Effects:    None
- *
- * Overview:        Indicates if the switch is pressed.  
- *
- * Note:            
- *
- *****************************************************************************/
-BOOL Switch3IsPressed(void)
-{
-    if(sw3 != old_sw3)
-    {
-        old_sw3 = sw3;                  // Save new value
-        if(sw3 == 0)                    // If pressed
-            return TRUE;                // Was pressed
-    }//end if
-    return FALSE;                       // Was not pressed
-}//end Switch3IsPressed
 
 
 
@@ -813,18 +808,6 @@ void USBCBSuspend(void)
 	//things to not work as intended.	
 	
 
-    #if defined(__C30__)
-    #if 0
-        U1EIR = 0xFFFF;
-        U1IR = 0xFFFF;
-        U1OTGIR = 0xFFFF;
-        IFS5bits.USB1IF = 0;
-        IEC5bits.USB1IE = 1;
-        U1OTGIEbits.ACTVIE = 1;
-        U1OTGIRbits.ACTVIF = 1;
-        Sleep();
-    #endif
-    #endif
 }
 
 
