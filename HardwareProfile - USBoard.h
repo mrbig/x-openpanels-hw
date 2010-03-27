@@ -135,6 +135,7 @@
     #define mLED_4_Toggle()     mLED_4 = !mLED_4;
     
     /** SWITCH *********************************************************/
+    // PortB all input, Internal pull up enabled
     #define mInitAllSwitches()  TRISB = 0xff;INTCON2bits.RBPU=0;
     #define sw2                 PORTBbits.RB4
     #define sw3                 PORTBbits.RB5

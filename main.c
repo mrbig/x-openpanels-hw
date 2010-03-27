@@ -503,7 +503,7 @@ void ProcessIO(void)
     // User Application USB tasks
     if((USBDeviceState < CONFIGURED_STATE)||(USBSuspendControl==1)) return;
 
-   Joystick();        
+   Joystick();
     //Call the function that behaves like a keyboard   
 }//end ProcessIO
 
@@ -512,8 +512,8 @@ void ProcessIO(void)
  */
 void ScanButtons(void)
 {
-    BYTE i;
-    BYTE pos = 0x10;
+    register BYTE i;
+    register BYTE pos = 0x10;
     
     for (i=0; i<2; i++ ) {
         LATD |= 0xf0;
@@ -554,7 +554,7 @@ BYTE GetEncoderDirection(BYTE old1, BYTE old2, BYTE cur1, BYTE cur2) {
  */
 void ProcessEncoders(void)
 {
-    BYTE dir;
+    register BYTE dir;
     
     Col_1 = 0;
     Col_2 = 1;
