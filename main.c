@@ -120,25 +120,7 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
 {
     struct
     {
-        struct
-        {
-            BYTE square:1;
-            BYTE x:1;
-            BYTE o:1;
-            BYTE triangle:1;
-            BYTE L1:1;
-            BYTE R1:1;
-            BYTE L2:1;
-            BYTE R2:1;//
-            BYTE select:1;
-            BYTE start:1;
-            BYTE left_stick:1;
-            BYTE right_stick:1;
-            BYTE home:1;
-            BYTE button14:1;
-            BYTE button15:1;
-            BYTE button16:1;
-        } buttons;
+        BYTE buttons[2];
         struct
         {
             BYTE hat_switch:4;
@@ -155,10 +137,21 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
     BYTE val[7];
 } INPUT_CONTROLS;
 
+/** Special functions setup ****************************************/
+#pragma romdata
+// Rotary encoders
+// Hight four bit specifies the multiplex input (byte number in the joy struct)
+// Low four bit specifies the lowest bit from the two legs of the rotary encoder
+// The legs of the rotary encoder should be connected adjacent
+ROM BYTE ROTARY_ENCODERS[1] = {0x00};
+
 /** VARIABLES ******************************************************/
 #pragma udata
 BYTE old_sw2,old_sw3;
 //char buffer[8];
+
+char buttons_old[2], buttons_curr[2];
+
 USB_HANDLE lastTransmission;
 BOOL Keyboard_out;
 
@@ -175,6 +168,7 @@ BOOL Keyboard_out;
 #endif
 INPUT_CONTROLS joystick_input;
 BYTE hid_report[8];
+
 #pragma udata
 
 /** VECTOR REMAPPING ***********************************************/
@@ -515,17 +509,27 @@ void ScanButtons(void)
     register BYTE i;
     register BYTE pos = 0x10;
     
+    memcpy(buttons_old, (void *)buttons_curr, sizeof(buttons_curr));
+    
     for (i=0; i<2; i++ ) {
         LATD |= 0xf0;
         LATD &= ~pos;
         
         pos = pos << 1;
         
-        joystick_input.val[i] = ~PORTB;
+        buttons_curr[i] = ~PORTB;
         
     }
+    
+    memcpy(joystick_input.members.buttons, (void *)buttons_curr, sizeof(buttons_curr));
+    
 }
 
+/**
+ * Calculates the direction where the encoder was rotated
+ * For this the last and the current state is needed
+ *
+ */
 BYTE GetEncoderDirection(BYTE old1, BYTE old2, BYTE cur1, BYTE cur2) {
     if (cur1 == old1 && cur2 == old2) {
         return 0;
@@ -555,20 +559,31 @@ BYTE GetEncoderDirection(BYTE old1, BYTE old2, BYTE cur1, BYTE cur2) {
 void ProcessEncoders(void)
 {
     register BYTE dir;
+    register BYTE old_sw0, old_sw1, cur_sw0, cur_sw1;
+    register BYTE i;
+    register BYTE pos, strtbit;
     
-    Col_1 = 0;
-    Col_2 = 1;
-    Col_3 = 1;
-    Col_4 = 1;
+    //*
     
-    dir = GetEncoderDirection(old_sw2, old_sw3, PORTBbits.RB4, PORTBbits.RB5);
+    for (i=0; i<sizeof(ROTARY_ENCODERS); i++ ) {
+        pos = ROTARY_ENCODERS[i] >> 4;
+        strtbit = ROTARY_ENCODERS[i] & 0x0f;
+        
+        old_sw0 = (buttons_old[pos] >> strtbit) & 1;
+        old_sw1 = (buttons_old[pos] >> strtbit + 1) & 1;
     
-    joystick_input.val[0] &= 0xcf;
-    joystick_input.val[0] |= dir << 4;
+        cur_sw0 = (buttons_curr[pos] >> strtbit) & 1;
+        cur_sw1 = (buttons_curr[pos] >> strtbit+ 1) & 1;
     
-    old_sw2 = PORTBbits.RB4;
-    old_sw3 = PORTBbits.RB5;
+        dir = GetEncoderDirection(old_sw0, old_sw1, cur_sw0, cur_sw1);
     
+        // Cleaning
+        joystick_input.members.buttons[pos] &= ~(0x3<< strtbit);
+        // Setting bit
+        joystick_input.members.buttons[pos] |= dir << strtbit;
+    
+    }
+
     return;
 }
 
@@ -598,65 +613,22 @@ void Joystick(void)
     if(!HIDTxHandleBusy(lastTransmission))
     {
         ADCON0bits.GO = 1;
-        
-        //If the button is pressed
-//        if(!sw3)
-//        {
-            //Indicate that the "x" button is pressed, but none others
-            ScanButtons();
-            ProcessEncoders();
-            /*
-            joystick_input.members.buttons.x = !sw3;
-            joystick_input.members.buttons.square = ADCON0bits.DONE;
-            joystick_input.members.buttons.o = 0;
-            joystick_input.members.buttons.triangle = 0;
-            joystick_input.members.buttons.L1 = 0;
-            joystick_input.members.buttons.R1 = 0;
-            joystick_input.members.buttons.L2 = 0;
-            joystick_input.members.buttons.R2 = 0;
-            joystick_input.members.buttons.select = 0;
-            joystick_input.members.buttons.start = 0;
-            joystick_input.members.buttons.left_stick = 0;
-            joystick_input.members.buttons.right_stick = 0;
-            joystick_input.members.buttons.home = 0;
-            */
 
-            //Move the hat switch to the "east" position
-            joystick_input.members.hat_switch.hat_switch = HAT_SWITCH_NULL;
+        ScanButtons();
+        ProcessEncoders();
 
-            //Move the X and Y coordinates to the their extreme values (0x80 is
-            //  in the middle - no value).
-            joystick_input.members.analog_stick.X = ADRESH;
-            joystick_input.members.analog_stick.Y = 0;
-            joystick_input.members.analog_stick.Z = 0;
-            joystick_input.members.analog_stick.Rz = 0;
+        //Move the hat switch to the "east" position
+        joystick_input.members.hat_switch.hat_switch = HAT_SWITCH_NULL;
 
-           	//Send the packet over USB to the host.
-           	lastTransmission = HIDTxPacket(HID_EP, (BYTE*)&joystick_input, sizeof(joystick_input));
+        //Move the X and Y coordinates to the their extreme values (0x80 is
+        //  in the middle - no value).
+        joystick_input.members.analog_stick.X = ADRESH;
+        joystick_input.members.analog_stick.Y = 0;
+        joystick_input.members.analog_stick.Z = 0;
+        joystick_input.members.analog_stick.Rz = 0;
 
-    /*
-        }
-        else
-        {
-            //Reset values of the controller to default state
-
-            //Buttons
-            joystick_input.val[0] = 0x00;
-            joystick_input.val[1] = 0x00;
-
-            //Hat switch
-            joystick_input.val[2] = 0x08;
-
-            //Analog sticks
-            joystick_input.val[3] = 0x80;
-            joystick_input.val[4] = 0x80;
-            joystick_input.val[5] = 0x80;
-            joystick_input.val[6] = 0x80;
-
-           	//Send the 8 byte packet over USB to the host.
-           	lastTransmission = HIDTxPacket(HID_EP, (BYTE*)&joystick_input, sizeof(joystick_input));
-        }
-    */
+        //Send the packet over USB to the host.
+        lastTransmission = HIDTxPacket(HID_EP, (BYTE*)&joystick_input, sizeof(joystick_input));
     }
     return;		
 }//end joystick()

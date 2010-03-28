@@ -31,7 +31,6 @@
       <item>-Opa-</item>
       <item>-fo=%OBJECT</item>
       <item>%I</item>
-      <item>|grep -v Z:\</item>
     </custom_arguments>
     <includes>
       <item>$(SRCPATH)</item>
