@@ -13,6 +13,7 @@
       <item>USB/usb_device.c</item>
       <item>USB/usb_function_hid.c</item>
       <item>HardwareProfile.h</item>
+      <item>button_config.h</item>
     </files>
     <description/>
     <version>0.1</version>

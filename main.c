@@ -42,17 +42,11 @@
 
 /** CONFIGURATION **************************************************/
 #if defined(PICDEM_FS_USB)      // Configuration bits for PICDEM FS USB Demo Board (based on PIC18F4550)
-//*
-        #pragma config PLLDIV   = 5         // (20 MHz crystal on PICDEM FS USB board)
+        #pragma config PLLDIV   = 5         // (20 MHz crystal)
         #pragma config CPUDIV   = OSC1_PLL2
         #pragma config USBDIV   = 2         // Clock source from 96MHz PLL/2
         #pragma config FOSC     = HSPLL_HS
-/*/
-        #pragma config PLLDIV   = 5         // (20 MHz crystal on PICDEM FS USB board)
-        #pragma config CPUDIV   = OSC1_PLL2   
-        #pragma config USBDIV   = 2         // Clock source from 96MHz PLL/2
-        #pragma config FOSC     = HSPLL_HS
-*/
+
         #pragma config FCMEN    = OFF
         #pragma config IESO     = OFF
         #pragma config PWRT     = OFF
@@ -104,6 +98,8 @@ void YourHighPriorityISRCode();
 void YourLowPriorityISRCode();
 void Joystick(void);
 
+#include "button_config.h"
+
 /** DECLARATIONS ***************************************************/
 //http://www.microsoft.com/whdc/archive/hidgame.mspx
 #define HAT_SWITCH_NORTH            0x0
@@ -120,7 +116,7 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
 {
     struct
     {
-        BYTE buttons[2];
+        BYTE buttons[COLUMNS * 2];
         struct
         {
             BYTE hat_switch:4;
@@ -134,30 +130,19 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
             BYTE Rz;
         } analog_stick;
     } members;
-    BYTE val[7];
+    BYTE val[COLUMNS * 2 + 5];
 } INPUT_CONTROLS;
 
-/** Special functions setup ****************************************/
-#pragma romdata
-// Rotary encoders
-// Hight four bit specifies the multiplex input (byte number in the joy struct)
-// Low four bit specifies the lowest bit from the two legs of the rotary encoder
-// The legs of the rotary encoder should be connected adjacent
-ROM BYTE ROTARY_ENCODERS[1] = {0x00};
 
 /** VARIABLES ******************************************************/
 #pragma udata
-BYTE old_sw2,old_sw3;
-//char buffer[8];
 
-char buttons_old[2], buttons_curr[2];
+char buttons_old[COLUMNS], buttons_curr[COLUMNS];
 
 USB_HANDLE lastTransmission;
 BOOL Keyboard_out;
 
-#if defined(__18F14K50) || defined(__18F13K50) || defined(__18LF14K50) || defined(__18LF13K50) 
-    #pragma udata usbram2
-#elif defined(__18F2455) || defined(__18F2550) || defined(__18F4455) || defined(__18F4550)\
+#if defined(__18F2455) || defined(__18F2550) || defined(__18F4455) || defined(__18F4550)\
     || defined(__18F2458) || defined(__18F2453) || defined(__18F4558) || defined(__18F4553)
     #pragma udata USB_VARIABLES=0x500
 #elif defined(__18F4450) || defined(__18F2450)
@@ -296,14 +281,6 @@ BYTE hid_report[8];
  *******************************************************************/
 void main(void)
 {
-//    //This can be used for user entry into the bootloader  
-//    #if defined(__C30__) 
-//        mInitSwitch2();
-//        if(sw2 == 0)
-//        {
-//            EnterBootloader();
-//        }
-//    #endif
 
     InitializeSystem();
 
@@ -433,8 +410,6 @@ void UserInit(void)
     
     //Initialize all of the push buttons
     mInitAllSwitches();
-    old_sw2 = sw2;
-    old_sw3 = sw3;
     
     mLED_3_On();
     
@@ -511,7 +486,7 @@ void ScanButtons(void)
     
     memcpy(buttons_old, (void *)buttons_curr, sizeof(buttons_curr));
     
-    for (i=0; i<2; i++ ) {
+    for (i=0; i<COLUMNS; i++ ) {
         LATD |= 0xf0;
         LATD &= ~pos;
         
@@ -587,6 +562,31 @@ void ProcessEncoders(void)
     return;
 }
 
+/**
+ * Process all throw switches
+ * When the port goes to high, will emit a press event on the original button.
+ * When goes back to low, will emit the event on the virtual button
+ */
+void ProcessThrowSwitches(void)
+{
+    register BYTE i, mask;
+    for (i=0; i<COLUMNS; i++) {
+        mask = THROW_SWITCHES[i];
+        // Clearing bits in the output
+        joystick_input.members.buttons[i] &= ~mask;
+        
+        // Low-High transition, event on the original button
+        joystick_input.members.buttons[i] |= (~buttons_old[i] & mask) & 
+                                             (buttons_curr[i] & mask);
+        
+        // High-low transition, event on the virtual button
+        joystick_input.members.buttons[i+COLUMNS] = 0;
+        joystick_input.members.buttons[i+COLUMNS] |= (buttons_old[i] & mask) & 
+                                                     (~buttons_curr[i] & mask);
+    }
+    
+}
+
 /******************************************************************************
  * Function:        void Joystick(void)
  *
@@ -615,6 +615,7 @@ void Joystick(void)
         ADCON0bits.GO = 1;
 
         ScanButtons();
+        ProcessThrowSwitches();
         ProcessEncoders();
 
         //Move the hat switch to the "east" position
