@@ -139,6 +139,8 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
 
 char buttons_old[COLUMNS], buttons_curr[COLUMNS];
 
+BYTE throw_counters[COLUMNS * 8];
+
 USB_HANDLE lastTransmission;
 BOOL Keyboard_out;
 
@@ -405,6 +407,8 @@ static void InitializeSystem(void)
  *****************************************************************************/
 void UserInit(void)
 {
+    register BYTE i;
+    
     //Initialize all of the LED pins
     mInitAllLEDs();
     
@@ -418,6 +422,16 @@ void UserInit(void)
     Col_2 = 1;
     Col_3 = 1;
     Col_4 = 1;
+    
+    // Clear all counters
+    for (i=0; i<COLUMNS * 8; i++) {
+        throw_counters[i] = 0;
+    }
+    
+    // Clear button states
+    for (i=0; i<COLUMNS * 2; i++) {
+        joystick_input.members.buttons[i] = 0;
+    }
 
     //initialize the variable holding the handle for the last
     // transmission
@@ -563,26 +577,57 @@ void ProcessEncoders(void)
 }
 
 /**
- * Process all throw switches
+ * Process all double throw switches
  * When the port goes to high, will emit a press event on the original button.
  * When goes back to low, will emit the event on the virtual button
  */
 void ProcessThrowSwitches(void)
 {
-    register BYTE i, mask;
+    register BYTE i, j, pos, mask, type;
+    pos = 0;
     for (i=0; i<COLUMNS; i++) {
-        mask = THROW_SWITCHES[i];
-        // Clearing bits in the output
-        joystick_input.members.buttons[i] &= ~mask;
+        mask = 1;
+        joystick_input.members.buttons[i+COLUMNS] = 0; // We can clear it once
         
-        // Low-High transition, event on the original button
-        joystick_input.members.buttons[i] |= (~buttons_old[i] & mask) & 
-                                             (buttons_curr[i] & mask);
-        
-        // High-low transition, event on the virtual button
-        joystick_input.members.buttons[i+COLUMNS] = 0;
-        joystick_input.members.buttons[i+COLUMNS] |= (buttons_old[i] & mask) & 
-                                                     (~buttons_curr[i] & mask);
+        for (j = 0; j<8; j++) {
+            if (THROW_SWITCHES[i] & mask) {
+                // Found a throw switch
+                
+                // Clear this bit, so we can set it later
+                joystick_input.members.buttons[i] &= ~mask;
+                
+                if ((~buttons_old[i] & mask) & (buttons_curr[i] & mask)) {
+                    // Low-high transition happened
+                    joystick_input.members.buttons[i] |= mask;
+                    throw_counters[pos] = THROW_TIMEOUT << 1;
+                }
+                else if ((buttons_old[i] & mask) & (~buttons_curr[i] & mask)) {
+                    // High-low transition detected
+                    joystick_input.members.buttons[i+COLUMNS] |= mask;
+                    throw_counters[pos] = (THROW_TIMEOUT << 1) | 1;
+                }
+                else if (throw_counters[pos]) {
+                    // No state change happened, but the counter from the last change did not expire yet
+                    type = throw_counters[pos] & 0x01;
+                    if (type) {
+                        joystick_input.members.buttons[i+COLUMNS] |= mask;
+                    } else {
+                        joystick_input.members.buttons[i] |= mask;
+                    }
+                    
+                    throw_counters[pos] = throw_counters[pos] >> 1;
+                    throw_counters[pos]--;
+                    if (throw_counters[pos]) {
+                        throw_counters[pos] = throw_counters[pos] << 1 | type;
+                    }
+                }
+                
+                // Move our pointer to the left
+                pos ++;
+            }
+            mask = mask << 1;
+        }
+
     }
     
 }
