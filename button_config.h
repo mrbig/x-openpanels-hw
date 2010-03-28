@@ -3,6 +3,7 @@
 #define COLUMNS 2
 
 #define THROW_TIMEOUT 64
+#define ROTARY_TIMEOUT 24
 
 #pragma romdata
 // Rotary encoders

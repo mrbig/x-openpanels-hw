@@ -133,6 +133,11 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
     BYTE val[COLUMNS * 2 + 5];
 } INPUT_CONTROLS;
 
+typedef struct
+{
+    BYTE counter;
+    BYTE dir;
+} ROTARY_COUNTER;
 
 /** VARIABLES ******************************************************/
 #pragma udata
@@ -140,6 +145,7 @@ typedef union _INTPUT_CONTROLS_TYPEDEF
 char buttons_old[COLUMNS], buttons_curr[COLUMNS];
 
 BYTE throw_counters[COLUMNS * 8];
+ROTARY_COUNTER rotary_counters[sizeof(ROTARY_ENCODERS)];
 
 USB_HANDLE lastTransmission;
 BOOL Keyboard_out;
@@ -432,6 +438,12 @@ void UserInit(void)
     for (i=0; i<COLUMNS * 2; i++) {
         joystick_input.members.buttons[i] = 0;
     }
+    
+    // Clear rotary counter states
+    for (i=0; i<sizeof(ROTARY_ENCODERS); i++) {
+        rotary_counters[i].counter = 0;
+        rotary_counters[i].dir = 0;
+    }
 
     //initialize the variable holding the handle for the last
     // transmission
@@ -558,13 +570,25 @@ void ProcessEncoders(void)
         pos = ROTARY_ENCODERS[i] >> 4;
         strtbit = ROTARY_ENCODERS[i] & 0x0f;
         
-        old_sw0 = (buttons_old[pos] >> strtbit) & 1;
-        old_sw1 = (buttons_old[pos] >> strtbit + 1) & 1;
+        
     
-        cur_sw0 = (buttons_curr[pos] >> strtbit) & 1;
-        cur_sw1 = (buttons_curr[pos] >> strtbit+ 1) & 1;
+        if (rotary_counters[i].counter) {
+            dir = rotary_counters[i].dir;
+            rotary_counters[i].counter--;
+        } else {
+            old_sw0 = (buttons_old[pos] >> strtbit) & 1;
+            old_sw1 = (buttons_old[pos] >> strtbit + 1) & 1;
     
-        dir = GetEncoderDirection(old_sw0, old_sw1, cur_sw0, cur_sw1);
+            cur_sw0 = (buttons_curr[pos] >> strtbit) & 1;
+            cur_sw1 = (buttons_curr[pos] >> strtbit + 1) & 1;
+            
+            dir = GetEncoderDirection(old_sw0, old_sw1, cur_sw0, cur_sw1);
+            
+            if (dir != rotary_counters[i].dir) {
+                rotary_counters[i].counter = ROTARY_TIMEOUT;
+                rotary_counters[i].dir = dir;
+            }
+        }
     
         // Cleaning
         joystick_input.members.buttons[pos] &= ~(0x3<< strtbit);
