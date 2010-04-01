@@ -52,5 +52,9 @@
       <item>%LIBS</item>
     </custom_arguments>
   </linker>
-  <editors/>
+  <editors>
+    <bookmarks>
+      <item>file:///home/mrbig/xtras/xplane/hw/HIDJoystick/Firmware/main.c,636</item>
+    </bookmarks>
+  </editors>
 </piklab>

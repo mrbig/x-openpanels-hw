@@ -1,6 +1,6 @@
 /** Special functions setup ****************************************/
 
-#define COLUMNS 2
+#define COLUMNS 8
 
 #define THROW_TIMEOUT 64
 #define ROTARY_TIMEOUT 24
@@ -13,6 +13,6 @@
 ROM BYTE ROTARY_ENCODERS[2] = {0x00, 0x03};
 
 // Throw switches - bitmask for all input column
-ROM BYTE THROW_SWITCHES[COLUMNS] = {0x00, 0x63};
+ROM BYTE THROW_SWITCHES[COLUMNS] = {0x00, 0x63, 0xff, 0xff, 0x00, 0x00, 0x00, 0xff};
 
 

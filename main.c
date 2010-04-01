@@ -508,12 +508,12 @@ void ProcessIO(void)
 void ScanButtons(void)
 {
     register BYTE i;
-    register BYTE pos = 0x10;
+    register BYTE pos = 0x01;
     
     memcpy(buttons_old, (void *)buttons_curr, sizeof(buttons_curr));
     
     for (i=0; i<COLUMNS; i++ ) {
-        LATD |= 0xf0;
+        LATD |= 0xff;
         LATD &= ~pos;
         
         pos = pos << 1;
