@@ -317,7 +317,7 @@ void main(void)
 
 		// Application-specific tasks.
 		// Application related code may be added here, or in the ProcessIO() function.
-        ProcessIO();        
+        ProcessIO();
     }//end while
 }//end main
 
@@ -421,13 +421,8 @@ void UserInit(void)
     //Initialize all of the push buttons
     mInitAllSwitches();
     
-    mLED_3_On();
+    mLED_2_On();
     
-    
-    Col_1 = 0;
-    Col_2 = 1;
-    Col_3 = 1;
-    Col_4 = 1;
     
     // Clear all counters
     for (i=0; i<COLUMNS * 8; i++) {
@@ -493,7 +488,7 @@ void UserInit(void)
 void ProcessIO(void)
 {   
     //Blink the LEDs according to the USB device status
-    BlinkUSBStatus();
+    //BlinkUSBStatus();
 
     // User Application USB tasks
     if((USBDeviceState < CONFIGURED_STATE)||(USBSuspendControl==1)) return;
