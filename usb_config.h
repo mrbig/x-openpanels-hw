@@ -79,7 +79,7 @@
 //#define USB_PING_PONG_MODE USB_PING_PONG__ALL_BUT_EP0		//NOTE: This mode is not supported in PIC18F4550 family rev A3 devices
 
 #define USB_FULL_PING_PONG
-#define USB_EP0_OUT_ONLY
+//#define USB_EP0_OUT_ONLY
 
 
 #define USB_POLLING
@@ -124,11 +124,14 @@
 
 /* HID */
 #define HID_INTF_ID             0x00
-#define HID_EP 					1
-#define HID_INT_OUT_EP_SIZE     64
+#define HID_EP                  1
+#define HID_INT_OUT_EP_SIZE     2
 #define HID_INT_IN_EP_SIZE      64
 #define HID_NUM_OF_DSC          1
-#define HID_RPT01_SIZE          70
+#define HID_RPT01_SIZE          84
+
+#define USER_SET_REPORT_HANDLER USBHIDCBSetReportHandler
+
 
 /** DEFINITIONS ****************************************************/
 

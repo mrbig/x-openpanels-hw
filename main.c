@@ -97,6 +97,8 @@ void UserInit(void);
 void YourHighPriorityISRCode();
 void YourLowPriorityISRCode();
 void Joystick(void);
+void USBHIDCBSetReportComplete(void);
+
 
 #include "button_config.h"
 
@@ -148,6 +150,7 @@ BYTE throw_counters[COLUMNS * 8];
 ROTARY_COUNTER rotary_counters[sizeof(ROTARY_ENCODERS)];
 
 USB_HANDLE lastTransmission;
+USB_HANDLE lastOUTTransmission;
 BOOL Keyboard_out;
 
 #if defined(__18F2455) || defined(__18F2550) || defined(__18F4455) || defined(__18F4550)\
@@ -421,7 +424,7 @@ void UserInit(void)
     //Initialize all of the push buttons
     mInitAllSwitches();
     
-    mLED_2_On();
+    mLED_2_Off();
     
     
     // Clear all counters
@@ -444,6 +447,7 @@ void UserInit(void)
     // transmission
 
     lastTransmission = 0;
+    lastOUTTransmission = 0;
     
     // A/D converter init
     // Setting input channels
@@ -695,6 +699,25 @@ void Joystick(void)
         //Send the packet over USB to the host.
         lastTransmission = HIDTxPacket(HID_EP, (BYTE*)&joystick_input, sizeof(joystick_input));
     }
+    
+    if(!HIDRxHandleBusy(lastOUTTransmission))
+    {
+        //Do something useful with the data now.  Data is in the OutBuffer[0].
+        //Num Lock LED state is in Bit0.
+        if(hid_report_out[0] & 0x01) //Make LED1 and LED2 match Num Lock state.
+        {
+            mLED_1_On();
+            mLED_2_On();
+        }
+        else
+        {   
+            mLED_1_Off();
+            mLED_2_Off();
+        }
+     
+        lastOUTTransmission = HIDRxPacket(HID_EP,(BYTE*)&hid_report_out,1);
+    } 
+
     return;		
 }//end joystick()
 
@@ -1063,6 +1086,8 @@ void USBCBInitEP(void)
 {
     //enable the HID endpoint
     USBEnableEndpoint(HID_EP,USB_OUT_ENABLED|USB_IN_ENABLED|USB_HANDSHAKE_ENABLED|USB_DISALLOW_SETUP);
+    
+    lastOUTTransmission = HIDRxPacket(HID_EP,(BYTE*)&hid_report_out,1);
 }
 
 /********************************************************************
@@ -1202,6 +1227,62 @@ BOOL USER_USB_CALLBACK_EVENT_HANDLER(USB_EVENT event, void *pdata, WORD size)
             break;
     }      
     return TRUE; 
+}
+
+// *****************************************************************************
+// ************** USB Class Specific Callback Function(s) **********************
+// *****************************************************************************
+
+/********************************************************************
+ * Function:        void USBHIDCBSetReportHandler(void)
+ *
+ * PreCondition:    None
+ *
+ * Input:           None
+ *
+ * Output:          None
+ *
+ * Side Effects:    None
+ *
+ * Overview:        USBHIDCBSetReportHandler() is used to respond to
+ *                                      the HID device class specific SET_REPORT control
+ *                                      transfer request (starts with SETUP packet on EP0 OUT).  
+ * Note:            
+ *******************************************************************/
+void USBHIDCBSetReportHandler(void)
+{
+        //Prepare to receive the keyboard LED state data through a SET_REPORT
+        //control transfer on endpoint 0.  The host should only send 1 byte, 
+        //since this is all that the report descriptor allows it to send.    
+    USBEP0Receive((BYTE*)&CtrlTrfData, USB_EP0_BUFF_SIZE, USBHIDCBSetReportComplete);
+}
+ 
+//Secondary callback function that gets called when the above
+//control transfer completes for the USBHIDCBSetReportHandler()
+void USBHIDCBSetReportComplete(void)
+{
+    //1 byte of LED state data should now be in the CtrlTrfData buffer.
+
+    //Num Lock LED state is in Bit0.
+    //*
+    if(CtrlTrfData[0] & 0x01)       //Make LED1 and LED2 match Num Lock state.
+    {
+        mLED_1_On();
+    }
+    else
+    {
+        mLED_1_Off();
+    }
+    if(CtrlTrfData[0] & 0x02)       //Make LED1 and LED2 match Num Lock state.
+    {
+        mLED_2_On();
+    }
+    else
+    {
+        mLED_2_Off();
+    }
+    //*/
+
 }
 
 /** EOF main.c *************************************************/
