@@ -127,7 +127,7 @@
     
     /** SWITCH *********************************************************/
     // PortB all input, Internal pull up enabled
-    #define mInitAllSwitches()  TRISB = 0xff;INTCON2bits.RBPU=0;
+    #define mInitAllSwitches()  TRISB = 0xff;INTCON2bits.RBPU=0;TRISD = 0;
     
     
     /** USB external transceiver interface (optional) ******************/
