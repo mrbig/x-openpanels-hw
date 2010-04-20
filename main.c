@@ -40,6 +40,8 @@
 #include "HardwareProfile.h"
 #include "./USB/usb_function_hid.h"
 
+#include "led_driver.h"
+
 /** CONFIGURATION **************************************************/
 #if defined(PICDEM_FS_USB)      // Configuration bits for PICDEM FS USB Demo Board (based on PIC18F4550)
         #pragma config PLLDIV   = 5         // (20 MHz crystal)
@@ -99,7 +101,6 @@ void YourLowPriorityISRCode();
 void Joystick(void);
 void USBHIDCBSetReportComplete(void);
 
-
 #include "button_config.h"
 
 /** DECLARATIONS ***************************************************/
@@ -148,6 +149,8 @@ char buttons_old[COLUMNS], buttons_curr[COLUMNS];
 
 BYTE throw_counters[COLUMNS * 8];
 ROTARY_COUNTER rotary_counters[sizeof(ROTARY_ENCODERS)];
+
+BYTE leds[2];
 
 USB_HANDLE lastTransmission;
 USB_HANDLE lastOUTTransmission;
@@ -424,7 +427,12 @@ void UserInit(void)
     //Initialize all of the push buttons
     mInitAllSwitches();
     
-    mLED_2_Off();
+    lLatch_Off();
+    lClock_Off();
+    
+    leds[0] = 0x00;
+    leds[1] = 0x00;
+    setLeds(leds);
     
     
     // Clear all counters
@@ -490,9 +498,7 @@ void UserInit(void)
  * Note:            None
  *******************************************************************/
 void ProcessIO(void)
-{   
-    //Blink the LEDs according to the USB device status
-    //BlinkUSBStatus();
+{
 
     // User Application USB tasks
     if((USBDeviceState < CONFIGURED_STATE)||(USBSuspendControl==1)) return;
@@ -704,6 +710,10 @@ void Joystick(void)
     {
         //Do something useful with the data now.  Data is in the OutBuffer[0].
         //Num Lock LED state is in Bit0.
+        leds[0] = hid_report_out[0];
+        leds[1] = hid_report_out[1];
+        setLeds(leds);
+        /*
         if(hid_report_out[0] & 0x01) //Make LED1 and LED2 match Num Lock state.
         {
             mLED_1_On();
@@ -714,8 +724,9 @@ void Joystick(void)
             mLED_1_Off();
             mLED_2_Off();
         }
+        */
      
-        lastOUTTransmission = HIDRxPacket(HID_EP,(BYTE*)&hid_report_out,1);
+        lastOUTTransmission = HIDRxPacket(HID_EP,(BYTE*)&hid_report_out,2);
     } 
 
     return;		
@@ -723,96 +734,6 @@ void Joystick(void)
 
 
 
-
-/********************************************************************
- * Function:        void BlinkUSBStatus(void)
- *
- * PreCondition:    None
- *
- * Input:           None
- *
- * Output:          None
- *
- * Side Effects:    None
- *
- * Overview:        BlinkUSBStatus turns on and off LEDs 
- *                  corresponding to the USB device state.
- *
- * Note:            mLED macros can be found in HardwareProfile.h
- *                  USBDeviceState is declared and updated in
- *                  usb_device.c.
- *******************************************************************/
-void BlinkUSBStatus(void)
-{
-    static WORD led_count=0;
-    
-    if(led_count == 0)led_count = 10000U;
-    led_count--;
-
-    #define mLED_Both_Off()         {mLED_1_Off();mLED_2_Off();}
-    #define mLED_Both_On()          {mLED_1_On();mLED_2_On();}
-    #define mLED_Only_1_On()        {mLED_1_On();mLED_2_Off();}
-    #define mLED_Only_2_On()        {mLED_1_Off();mLED_2_On();}
-
-    if(USBSuspendControl == 1)
-    {
-        if(led_count==0)
-        {
-            mLED_1_Toggle();
-            if(mGetLED_1())
-            {
-                mLED_2_On();
-            }
-            else
-            {
-                mLED_2_Off();
-            }
-        }//end if
-    }
-    else
-    {
-        if(USBDeviceState == DETACHED_STATE)
-        {
-            mLED_Both_Off();
-        }
-        else if(USBDeviceState == ATTACHED_STATE)
-        {
-            mLED_Both_On();
-        }
-        else if(USBDeviceState == POWERED_STATE)
-        {
-            mLED_Only_1_On();
-        }
-        else if(USBDeviceState == DEFAULT_STATE)
-        {
-            mLED_Only_2_On();
-        }
-        else if(USBDeviceState == ADDRESS_STATE)
-        {
-            if(led_count == 0)
-            {
-                mLED_1_Toggle();
-                mLED_2_Off();
-            }//end if
-        }
-        else if(USBDeviceState == CONFIGURED_STATE)
-        {
-            if(led_count==0)
-            {
-                mLED_1_Toggle();
-                if(mGetLED_1())
-                {
-                    mLED_2_Off();
-                }
-                else
-                {
-                    mLED_2_On();
-                }
-            }//end if
-        }//end if(...)
-    }//end if(UCONbits.SUSPND...)
-
-}//end BlinkUSBStatus
 
 
 
@@ -1087,7 +1008,7 @@ void USBCBInitEP(void)
     //enable the HID endpoint
     USBEnableEndpoint(HID_EP,USB_OUT_ENABLED|USB_IN_ENABLED|USB_HANDSHAKE_ENABLED|USB_DISALLOW_SETUP);
     
-    lastOUTTransmission = HIDRxPacket(HID_EP,(BYTE*)&hid_report_out,1);
+    lastOUTTransmission = HIDRxPacket(HID_EP,(BYTE*)&hid_report_out,2);
 }
 
 /********************************************************************
@@ -1263,25 +1184,9 @@ void USBHIDCBSetReportComplete(void)
 {
     //1 byte of LED state data should now be in the CtrlTrfData buffer.
 
-    //Num Lock LED state is in Bit0.
-    //*
-    if(CtrlTrfData[0] & 0x01)       //Make LED1 and LED2 match Num Lock state.
-    {
-        mLED_1_On();
-    }
-    else
-    {
-        mLED_1_Off();
-    }
-    if(CtrlTrfData[0] & 0x02)       //Make LED1 and LED2 match Num Lock state.
-    {
-        mLED_2_On();
-    }
-    else
-    {
-        mLED_2_Off();
-    }
-    //*/
+    leds[0] = CtrlTrfData[0];
+    leds[1] = CtrlTrfData[1];
+    setLeds(leds);
 
 }
 

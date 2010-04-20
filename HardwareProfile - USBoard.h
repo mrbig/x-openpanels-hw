@@ -104,45 +104,20 @@
     /** LED ************************************************************/
     #define mInitAllLEDs()      LATC &= 0xf8; TRISC &= 0xf8;
     
-    #define mLED_1              LATCbits.LATC0
-    #define mLED_2              LATCbits.LATC1
-    #define mLED_3              LATCbits.LATC2
-    
-    
-    #define mGetLED_1()         mLED_1
-    #define mGetLED_2()         mLED_2
-    #define mGetLED_3()         mLED_3
+    #define lClock              LATCbits.LATC0
+    #define lData               LATCbits.LATC1
+    #define lLatch              LATCbits.LATC2
 
-    #define mLED_1_On()         mLED_1 = 1;
-    #define mLED_2_On()         mLED_2 = 1;
-    #define mLED_3_On()         mLED_3 = 1;
-    
-    #define mLED_1_Off()        mLED_1 = 0;
-    #define mLED_2_Off()        mLED_2 = 0;
-    #define mLED_3_Off()        mLED_3 = 0;
-    
-    #define mLED_1_Toggle()     mLED_1 = !mLED_1;
-    #define mLED_2_Toggle()     mLED_2 = !mLED_2;
-    #define mLED_3_Toggle()     mLED_3 = !mLED_3;
+    #define lLatch_On()         lLatch = 1;
+    #define lClock_On()         lClock = 1;
+
+    #define lLatch_Off()        lLatch = 0;
+    #define lClock_Off()        lClock = 0;
+
     
     /** SWITCH *********************************************************/
     // PortB all input, Internal pull up enabled
     #define mInitAllSwitches()  TRISB = 0xff;INTCON2bits.RBPU=0;TRISD = 0;
     
-    
-    /** USB external transceiver interface (optional) ******************/
-/*
-    #define tris_usb_vpo        TRISBbits.TRISB3    // Output
-    #define tris_usb_vmo        TRISBbits.TRISB2    // Output
-    #define tris_usb_rcv        TRISAbits.TRISA4    // Input
-    #define tris_usb_vp         TRISCbits.TRISC5    // Input
-    #define tris_usb_vm         TRISCbits.TRISC4    // Input
-    #define tris_usb_oe         TRISCbits.TRISC1    // Output
-    
-    #define tris_usb_suspnd     TRISAbits.TRISA3    // Output
-*/    
-    /** I/O pin definitions ********************************************/
-    #define INPUT_PIN 1
-    #define OUTPUT_PIN 0
 
 #endif  //HARDWARE_PROFILE_PICDEM_FSUSB_H

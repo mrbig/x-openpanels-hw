@@ -306,12 +306,10 @@ ROM struct{BYTE report[HID_RPT01_SIZE];}hid_rpt01={{
   0x81,0x02,        //  INPUT(Data,Var,Abs)
   // Output
   0x05, 0x08,       //   USAGE_PAGE (LEDs)
+  0x75, 0x01,        //  REPORT_SIZE(1)
   0x19, 0x01,       //   USAGE_MINIMUM (Led0)
-  0x29, 0x03,       //   USAGE_MAXIMUM (Led2)
+  0x29, 0x10,       //   USAGE_MAXIMUM (Led15)
   0x91, 0x02,       //   OUTPUT (Data,Var,Abs)   
-  0x95, 0x01,       //   REPORT_COUNT (1)   
-  0x75, 0x03,       //   REPORT_SIZE (5) -- filler
-  0x91, 0x03,       //   OUTPUT (Cnst,Var,Abs)   
 
   0xC0              //END_COLLECTION
 }

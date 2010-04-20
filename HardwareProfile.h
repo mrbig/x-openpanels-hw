@@ -51,7 +51,6 @@
 #ifndef HARDWARE_PROFILE_H
 #define HARDWARE_PROFILE_H
 
-//#define DEMO_BOARD USER_DEFINED_BOARD
 
 #if !defined(DEMO_BOARD)
 
