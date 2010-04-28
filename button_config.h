@@ -10,7 +10,7 @@
 // Hight four bit specifies the multiplex input (byte number in the joy struct)
 // Low four bit specifies the lowest bit from the two legs of the rotary encoder
 // The legs of the rotary encoder should be connected adjacent
-ROM BYTE ROTARY_ENCODERS[2] = {0x00, 0x03};
+ROM BYTE ROTARY_ENCODERS[8] = {0x00, 0x02, 0x10, 0x12, 0x20, 0x22, 0x30, 0x32};
 
 // Throw switches - bitmask for all input column
 ROM BYTE THROW_SWITCHES[COLUMNS] = {0xe0, 0xe0, 0xe0, 0xe0, 0xee, 0x00, 0x00, 0xff};
