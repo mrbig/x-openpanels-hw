@@ -148,6 +148,7 @@ typedef struct
 char buttons_old[COLUMNS], buttons_curr[COLUMNS];
 
 BYTE throw_counters[COLUMNS * 8];
+BYTE delay_counters[COLUMNS * 8];
 ROTARY_COUNTER rotary_counters[sizeof(ROTARY_ENCODERS)];
 
 BYTE leds[2];
@@ -661,6 +662,56 @@ void ProcessThrowSwitches(void)
     
 }
 
+/**
+ * Process all buttons, that's off state should be delayed
+ * When this button goes from 1 to 0, the change is delayed, until 
+ * the counter is of, or the button is back to high level.
+ */
+void ProcessDelayedLow(void)
+{
+    register BYTE i, j, pos, mask, type;
+    pos = 0;
+    for (i=0; i<COLUMNS; i++) {
+        mask = 1;
+        joystick_input.members.buttons[i+COLUMNS] = 0; // We can clear it once
+        
+        for (j = 0; j<8; j++) {
+            if (DELAYED_LOW[i] & mask) {
+                // Found a delayed input
+
+                if ((buttons_old[i] & mask) & (~buttons_curr[i] & mask)) {
+                    // High-low transition detected
+                    if (delay_counters[pos] == 0) {
+                        // First transition
+                        buttons_curr[i] |= mask;
+                        delay_counters[pos] = LOW_TIMEOUT;
+                    }
+                    else if (delay_counters[pos] > 1) {
+                        // Counting...
+                        buttons_curr[i] |= mask;
+                        delay_counters[pos]--;
+                    }
+                    else {
+                        // Counter reached zero, so we don't alter the input
+                        delay_counters[pos]--;
+                    }
+                }
+                else if (delay_counters[pos]) {
+                    // No state change happened, but the counter from the last change did not expire yet
+                    // so we reset it
+                    delay_counters[pos] = 0;
+                }
+                
+                // Move our pointer to the left
+                pos ++;
+            }
+            mask = mask << 1;
+        }
+
+    }
+    
+}
+
 /******************************************************************************
  * Function:        void Joystick(void)
  *
@@ -689,6 +740,7 @@ void Joystick(void)
         ADCON0bits.GO = 1;
 
         ScanButtons();
+        ProcessDelayedLow();
         ProcessThrowSwitches();
         ProcessEncoders();
 
