@@ -1,10 +1,15 @@
 /** Special functions setup ****************************************/
 
+// Number of input columns
 #define COLUMNS 8
 
+// Timeout for throw switches. Helps filtering out short on-off changes
 #define THROW_TIMEOUT 64
-#define ROTARY_TIMEOUT 24
 
+// Timeout for rotary encoders. We don't take alternate directions, until the timeout is off
+#define ROTARY_TIMEOUT 32
+
+// Timeout for delayed low
 #define LOW_TIMEOUT 255
 
 
