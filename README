@@ -12,12 +12,13 @@ Current version is configured and tested with a PIC18 microcontroller, and
 has the following features:
 
  - 4 independent joystick axes
- - supports 64 physical button inputs
+ - supports 64 physical button inputs (via matrix connection)
  - inputs can be configured in pairs for rotary switches
  - support for edge triggered virtual buttons (128 software buttons at all,
    and you can save money on the switches)
  - buttons may be set as "delayed-off": off signal is delayed
  - easily reconfigurable button setup (if you know C)
+ - supports 16 independent leds writable by the client software
 
 Software is based on the Michrochip Demo Joystick code. This version is in very alpha stage,
 and without much documentation, but you'll free to use it, modify it for
