@@ -1,0 +1,27 @@
+X-OpenPanels-HW
+
+This is the hardware part for X-OpenPanels, a toolset to create your own
+panels for X-Plane. It is aimed to give an easy to user hardware framework
+for the PIC18, PIC24, or PIC32 USB Microcontrollers to create joystick like
+hardwares and aviation game panels.
+
+This is a very alpha stage project, you'll find the code as-is without much
+documentation.
+
+Current version is configured and tested with a PIC18 microcontroller, and
+has the following features:
+
+ - 4 independent joystick axes
+ - supports 64 physical button inputs
+ - inputs can be configured in pairs for rotary switches
+ - support for edge triggered virtual buttons (128 software buttons at all,
+   and you can save money on the switches)
+ - buttons may be set as "delayed-off": off signal is delayed
+ - easily reconfigurable button setup (if you know C)
+
+Software is based on the Michrochip Demo Joystick code. This version is in very alpha stage,
+and without much documentation, but you'll free to use it, modify it for
+your will.
+
+Good luck, and if you have questions contact me at
+nagy.attila.gabor@gmail.com
